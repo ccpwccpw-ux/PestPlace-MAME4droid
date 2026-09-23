@@ -49,13 +49,19 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("src/mame/video/dkong.c")
-          text = path.read_text()
+          # src/mame/video/dkong.c
+          video = Path("src/mame/video/dkong.c")
+          text = video.read_text()
 
-          start = text.index("PALETTE_INIT( pestplce)")
-          end = text.index("\nPALETTE_INIT( dkong2b)", start)
+          if "PALETTE_INIT( pestplce)" not in text:
+              marker = "PALETTE_INIT( dkong2b)"
+              if marker not in text:
+                  raise SystemExit(
+                      "Could not find PALETTE_INIT( dkong2b) "
+                      "in src/mame/video/dkong.c"
+                  )
 
-          replacement = r'''PALETTE_INIT( pestplce)
+              palette = """PALETTE_INIT( pestplce)
           {
               dkong_state *state = machine->driver_data<dkong_state>();
               int i;
@@ -84,15 +90,58 @@ jobs:
                       pal4bit(r), pal4bit(g), pal4bit(b));
               }
 
+              palette_normalize_range(machine->palette, 0, 255, 0, 255);
+
               color_prom += 512;
               state->color_codes = color_prom;
-          }'''
+          }
 
-          text = text[:start] + replacement + text[end:]
-          path.write_text(text)
+          """
+
+              text = text.replace(marker, palette + marker, 1)
+              video.write_text(text)
+
+          # src/mame/includes/dkong.h
+          header = Path("src/mame/includes/dkong.h")
+          htext = header.read_text()
+
+          if "PALETTE_INIT( pestplce );" not in htext:
+              marker = "PALETTE_INIT( dkong2b );"
+              if marker not in htext:
+                  raise SystemExit(
+                      "Could not find PALETTE_INIT( dkong2b ); "
+                      "in src/mame/includes/dkong.h"
+                  )
+
+              htext = htext.replace(
+                  marker,
+                  marker + "\nPALETTE_INIT( pestplce );",
+                  1
+              )
+              header.write_text(htext)
+
+          # src/mame/drivers/dkong.c
+          driver = Path("src/mame/drivers/dkong.c")
+          dtext = driver.read_text()
+
+          wrong = "MDRV_PALETTE_INIT(dkong2b)  /* wrong! */"
+
+          if wrong in dtext:
+              dtext = dtext.replace(
+                  wrong,
+                  "MDRV_PALETTE_INIT(pestplce)",
+                  1
+              )
+          elif "MDRV_PALETTE_INIT(pestplce)" not in dtext:
+              raise SystemExit(
+                  "Could not find Pest Place palette initializer "
+                  "in src/mame/drivers/dkong.c"
+              )
+
+          driver.write_text(dtext)
 
           print("Pest Place palette patch applied.")
-
+          PY
       - name: Prepare native build tools
         working-directory: native
         run: |
