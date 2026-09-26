@@ -364,7 +364,7 @@ jobs:
 
           SIGNED="app/build/outputs/apk/release/MAME4droid Pest Place-release.apk"
 
-          apksigner sign \
+          "$ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner" sign \
             --ks pestplace-release.keystore \
             --ks-key-alias pestplace \
             --ks-pass pass:changeit \
@@ -372,7 +372,7 @@ jobs:
             --out "$SIGNED" \
             "$APK"
 
-          apksigner verify --verbose "$SIGNED"
+          "$ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner" verify --verbose "$SIGNED"
           rm -f "$APK" pestplace-release.keystore
       - name: Find APK
         run: |
