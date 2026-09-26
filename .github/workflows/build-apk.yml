@@ -68,8 +68,8 @@ jobs:
 
               for (i = 0; i < 256; i++)
               {
-                  UINT8 prom_a = color_prom[i] ^ 0xff;
-UINT8 prom_b = color_prom[i + 0x100] ^ 0xff;
+                  UINT8 prom_a = color_prom[i];
+UINT8 prom_b = color_prom[i + 0x100];
 
                   /* Pest Place hardware PROM wiring */
                   int r = (((prom_b >> 3) & 1) << 3) |
