@@ -346,7 +346,34 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
+      - name: Sign APK
+        working-directory: android
+        run: |
+          APK=$(find app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)
+          test -n "$APK"
 
+          keytool -genkeypair \
+            -keystore pestplace-release.keystore \
+            -storepass changeit \
+            -keypass changeit \
+            -alias pestplace \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=PestPlace-MAME4droid, OU=PestPlace, O=PestPlace, L=Japan, ST=Kanagawa, C=JP"
+
+          SIGNED="app/build/outputs/apk/release/MAME4droid Pest Place-release.apk"
+
+          apksigner sign \
+            --ks pestplace-release.keystore \
+            --ks-key-alias pestplace \
+            --ks-pass pass:changeit \
+            --key-pass pass:changeit \
+            --out "$SIGNED" \
+            "$APK"
+
+          apksigner verify --verbose "$SIGNED"
+          rm -f "$APK" pestplace-release.keystore
       - name: Find APK
         run: |
           find android/app/build/outputs/apk -type f -name "*.apk" -print
